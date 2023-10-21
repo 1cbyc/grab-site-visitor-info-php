@@ -1,5 +1,5 @@
 <?php
-// You can get the user's IP address
+// You can get the user's IP address - shiii
 $ip_address = $_SERVER['REMOTE_ADDR'];
 
 // You can get the user's MAC address (requires PHP 5.3+ and Linux)
