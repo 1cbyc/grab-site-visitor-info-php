@@ -283,7 +283,7 @@ function App() {
           <img src="/logo.png" alt="Logo" style={{ height: '48px', width: '48px' }} />
           <h1>Analytics Dashboard</h1>
         </div>
-        <p>A modern frontend powered by React and TypeScript.</p>
+        <p>Track and analyze visitor events across your websites in real-time</p>
       </header>
 
       <div className="toolbar">
@@ -320,6 +320,16 @@ function App() {
       </div>
 
       <main className="dashboard-main">{renderContent()}</main>
+      
+      <footer style={{ 
+        marginTop: '3rem', 
+        padding: '2rem 0', 
+        textAlign: 'center', 
+        color: '#666',
+        borderTop: '1px solid #e2e8f0'
+      }}>
+        <p>© 2024 Analytics Platform. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
