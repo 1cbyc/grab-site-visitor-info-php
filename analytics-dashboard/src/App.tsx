@@ -279,7 +279,10 @@ function App() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>Analytics Dashboard</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <img src="/logo.png" alt="Logo" style={{ height: '48px', width: '48px' }} />
+          <h1>Analytics Dashboard</h1>
+        </div>
         <p>A modern frontend powered by React and TypeScript.</p>
       </header>
 
