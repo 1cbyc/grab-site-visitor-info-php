@@ -1,0 +1,17 @@
+{
+    "name": "analytics/platform",
+    "description": "A secure, event-driven analytics platform.",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AnalyticsPlatform\\": "src/"
+        }
+    },
+    "config": {
+        "vendor-dir": "vendor"
+    }
+}
