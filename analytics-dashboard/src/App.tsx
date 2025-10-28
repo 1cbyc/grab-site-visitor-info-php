@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://nsisonglabs.com/analytics_platform/public/api.php';
-const API_KEY = import.meta.env.VITE_API_KEY || 'CHANGE_THIS_TO_A_SECURE_RANDOM_KEY';
+const API_URL = import.meta.env.VITE_API_URL;
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 interface AnalyticsEvent {
   id: number;
@@ -32,6 +32,14 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!API_URL || !API_KEY) {
+      setError(
+        "Configuration error: API URL or Key is not defined. Please check your .env file.",
+      );
+      setIsLoading(false);
+      return;
+    }
+
     const fetchAllEvents = async () => {
       setIsLoading(true);
       try {
@@ -85,9 +93,8 @@ function App() {
 
   const summaryStats = useMemo(() => {
     const totalEvents = filteredEvents.length;
-    // Count both "pageview" and "pageview-success" events
     const pageviews = filteredEvents.filter(
-      (e) => e.event_name === "pageview" || e.event_name === "pageview-success",
+      (e) => e.event_name === "pageview",
     ).length;
     const uniqueSessions = new Set(filteredEvents.map((e) => e.session_id))
       .size;
@@ -100,8 +107,7 @@ function App() {
   const topPages = useMemo(() => {
     const pageCounts: Record<string, number> = {};
     filteredEvents.forEach((event) => {
-      // Count both "pageview" and "pageview-success" events
-      if ((event.event_name === "pageview" || event.event_name === "pageview-success") && event.event_data?.path) {
+      if (event.event_name === "pageview" && event.event_data?.path) {
         const path = event.event_data.path;
         pageCounts[path] = (pageCounts[path] || 0) + 1;
       }
@@ -126,7 +132,7 @@ function App() {
 
     return Object.entries(pathCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5); // Get top 5 404 paths
+      .slice(0, 5);
   }, [filteredEvents]);
 
   const renderContent = () => {
