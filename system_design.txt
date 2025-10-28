@@ -1,0 +1,30 @@
++-----------------+      +-------------------------+      +------------------+
+| Client Website  |      |   Analytics Backend     |      |    Database      |
+| (e.g., blog,    |      |    (PHP on cPanel)      |      |    (SQLite)      |
+|  e-commerce)    |      |                         |      |                  |
++-------+---------+      +-----------+-------------+      +--------+---------+
+        |                            ^                            |
+        | 1. JS Snippet sends        | 2. `track.php` validates   | 3. Data is
+        |    tracking data           |    and sanitizes data      |    stored
+        | (e.g., "pageview")         v                            v
+        +---------------------> `public/track.php`-------------> `db/analytics.db`
+                                     ^
+                                     |
+                                     |
++-----------------+      +-----------+-------------+      +--------+---------+
+|  Full Dashboard |      |   Analytics Backend     |      |    Database      |
+| (TypeScript App |      |    (PHP on cPanel)      |      |    (SQLite)      |
+|   on Vercel)    |      |                         |      |                  |
++-------+---------+      +-----------+-------------+      +--------+---------+
+        |                            |                            ^
+        | 5. Dashboard requests      | 6. `api.php` authenticates | 7. Data is
+        |    data with API key       |    the request and queries |    retrieved
+        |                            |    the database            |
+        v                            v                            |
+        +---------------------> `public/api.php` <----------------+
+        |                            |
+        | 8. API returns data        |
+        |    as JSON                 |
+        v                            v
+        +<---------------------------+
+
