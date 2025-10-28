@@ -48,6 +48,7 @@ function App() {
         
         console.log('Fetching from:', API_URL);
         console.log('Using API Key:', API_KEY ? '***' + API_KEY.slice(-4) : 'NOT SET');
+        console.log('API Key length:', API_KEY?.length);
         
         const response = await fetch(API_URL, { headers });
 
