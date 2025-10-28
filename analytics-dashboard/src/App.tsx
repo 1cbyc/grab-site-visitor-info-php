@@ -46,13 +46,7 @@ function App() {
         const headers = new Headers();
         headers.append("Authorization", `Bearer ${API_KEY}`);
         
-        console.log('Fetching from:', API_URL);
-        console.log('Using API Key:', API_KEY ? '***' + API_KEY.slice(-4) : 'NOT SET');
-        console.log('API Key length:', API_KEY?.length);
-        
         const response = await fetch(API_URL, { headers });
-
-        console.log('Response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -62,7 +56,6 @@ function App() {
         }
 
         const data: AnalyticsEvent[] = await response.json();
-        console.log('Fetched events:', data.length);
         setAllEvents(data);
 
         const uniqueIds = [...new Set(data.map((event) => event.website_id))];
