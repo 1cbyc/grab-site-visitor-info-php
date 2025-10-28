@@ -1,11 +1,16 @@
-db/*.db
-db/*.db-journal
+*.db
+*.db-journal
 *.sqlite
 *.sqlite3
+
+analytics_platform/db/*
+!analytics_platform/db/.gitkeep
 
 config.php
 .env
 .env.local
+.env.production
+.env.development
 .secrets
 
 composer.phar
@@ -15,6 +20,8 @@ vendor/
 node_modules/
 *.log
 npm-debug.log*
+yarn-error.log
+php_error.log
 
 .DS_Store
 Thumbs.db
@@ -22,6 +29,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+*.sublime-*
 
 dist/
 build/
