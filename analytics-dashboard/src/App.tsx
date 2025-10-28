@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, ChangeEvent } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -63,7 +63,7 @@ function App() {
       } catch (e: any) {
         setError(e.message || "An unknown error occurred while fetching data.");
       } finally {
-        setIsLoading(false);
+    setIsLoading(false);
       }
     };
 
