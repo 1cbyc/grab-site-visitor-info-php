@@ -1,7 +1,7 @@
 (function () {
   if (!window.fetch || !window.JSON || !window.localStorage) {
     console.warn(
-      "Analytics snippet: Browser does not support required features."
+      "Analytics snippet: Browser does not support required features.",
     );
     return;
   }
@@ -13,7 +13,7 @@
 
   if (!websiteId) {
     console.error(
-      "Analytics snippet: 'websiteId' is not configured in 'window.analyticsConfig'."
+      "Analytics snippet: 'websiteId' is not configured in 'window.analyticsConfig'.",
     );
     return;
   }
@@ -55,9 +55,18 @@
     }
   }
 
+  function track404() {
+    sendEvent("404_not_found", { path_not_found: window.location.pathname });
+  }
+
   const publicApi = window.analytics || {};
   publicApi.track = sendEvent;
+  publicApi.track404 = track404;
   window.analytics = publicApi;
+
+  if (userConfig.doNotTrackPageview) {
+    return;
+  }
 
   const trackPageView = () => sendEvent("pageview");
 
