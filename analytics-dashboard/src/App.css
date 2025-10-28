@@ -10,7 +10,7 @@
     --color-text-primary: #1a202c;
     --color-text-secondary: #4a5568;
     --color-border: #e2e8f0;
-    --color-primary: #3182ce;
+    --color-primary: #4299e1; /* A nice blue */
     --color-error: #e53e3e;
     --shadow-sm:
         0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -32,7 +32,7 @@ body {
 .dashboard-header {
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--color-border);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .dashboard-header h1 {
@@ -45,6 +45,37 @@ body {
     font-size: 1.125rem;
     color: var(--color-text-secondary);
     margin: 0;
+}
+
+.toolbar {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toolbar label {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-right: -0.25rem; /* Tighten space between label and input */
+}
+
+.toolbar select,
+.toolbar input[type="date"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem; /* 6px */
+    background-color: var(--color-surface);
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    font-family: inherit; /* Ensure date picker uses the same font */
+    line-height: 1.25;
+}
+
+.toolbar select:disabled {
+    background-color: #f7fafc;
+    cursor: not-allowed;
 }
 
 .dashboard-main {
@@ -64,6 +95,82 @@ body {
 .status-message.error {
     color: var(--color-error);
     font-weight: 500;
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.75rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.5rem;
+}
+
+.chart-container {
+    margin-top: 2rem;
+}
+
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bar-item {
+    display: grid;
+    grid-template-columns: 200px 1fr 50px;
+    align-items: center;
+    gap: 1rem;
+}
+
+.bar-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar-fill {
+    height: 30px;
+    background-color: var(--color-primary);
+    opacity: 0.8;
+    border-radius: 4px;
+    transition: width 0.3s ease-in-out;
+}
+
+.bar-value {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-align: right;
 }
 
 .table-container {
@@ -113,85 +220,4 @@ pre {
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--color-text-primary);
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin: 2rem 0;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0.5rem 0;
-}
-
-.stat-label {
-    opacity: 0.9;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.chart-container {
-    margin-top: 2rem;
-}
-
-.bar-chart {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.bar-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.bar-label {
-    min-width: 200px;
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-.bar-fill {
-    flex: 1;
-    height: 30px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
-.bar-value {
-    min-width: 40px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.tag {
-    display: inline-block;
-    padding: 0.375rem 0.75rem;
-    background: #667eea;
-    color: white;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-h3 {
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
 }
