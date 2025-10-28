@@ -147,8 +147,10 @@
 </head>
 <body>
 
-<?php
-define('API_KEY', 'SUPER_SECRET_API_KEY');
+    <?php
+    require_once __DIR__ . '/../src/Config.php';
+    $config = Config::load();
+    $apiKey = $config['api_key'] ?? 'CHANGE_THIS_TO_A_SECURE_RANDOM_KEY';
 
 $api_url = sprintf(
     "%s://%s%s/api.php",
@@ -157,12 +159,12 @@ $api_url = sprintf(
     dirname($_SERVER['REQUEST_URI'])
 );
 
-$options = [
-    'http' => [
-        'header' => "Authorization: Bearer " . API_KEY . "\r\n",
-        'method' => 'GET'
-    ]
-];
+    $options = [
+        'http' => [
+            'header' => "Authorization: Bearer " . $apiKey . "\r\n",
+            'method' => 'GET'
+        ]
+    ];
 $context = stream_context_create($options);
 
 $response = @file_get_contents($api_url, false, $context);

@@ -7,7 +7,7 @@ class Database
     public static function getConnection()
     {
         if (self::$pdo === null) {
-            $db_path = __DIR__ . '/../db/analytics.db';
+            $db_path = __DIR__ . "/../db/analytics.db";
             $db_dir = dirname($db_path);
 
             try {
@@ -15,24 +15,31 @@ class Database
                     mkdir($db_dir, 0755, true);
                 }
 
-                self::$pdo = new PDO('sqlite:' . $db_path);
-                self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                self::$pdo = new PDO("sqlite:" . $db_path);
+                self::$pdo->setAttribute(
+                    PDO::ATTR_ERRMODE,
+                    PDO::ERRMODE_EXCEPTION,
+                );
+                self::$pdo->setAttribute(
+                    PDO::ATTR_DEFAULT_FETCH_MODE,
+                    PDO::FETCH_ASSOC,
+                );
 
-                self::createEventsTable();
-
+                self::ensureSchemaIsUpToDate();
             } catch (PDOException $e) {
                 error_log("Database setup failed: " . $e->getMessage());
-                throw new Exception("Could not connect to or set up the database.");
+                throw new Exception(
+                    "Could not connect to or set up the database.",
+                );
             }
         }
 
         return self::$pdo;
     }
 
-    private static function createEventsTable()
+    private static function ensureSchemaIsUpToDate()
     {
-        $sql = "
+        $createTableSql = "
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             website_id TEXT NOT NULL,
@@ -41,15 +48,26 @@ class Database
             event_data TEXT,
             ip_address TEXT,
             user_agent TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            abuse_confidence_score INTEGER DEFAULT 0
         );
         ";
 
         try {
-            self::$pdo->exec($sql);
+            self::$pdo->exec($createTableSql);
         } catch (PDOException $e) {
             error_log("Failed to create 'events' table: " . $e->getMessage());
             throw new Exception("Database table initialization failed.");
+        }
+
+        try {
+            self::$pdo->exec(
+                "ALTER TABLE events ADD COLUMN abuse_confidence_score INTEGER DEFAULT 0",
+            );
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), "duplicate column name") === false) {
+                throw $e;
+            }
         }
     }
 }
