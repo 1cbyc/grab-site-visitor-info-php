@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, ChangeEvent } from "react";
 import "./App.css";
 
 const API_URL = "https://nsisonglabs.com/analytics_platform/public/api.php";
@@ -9,64 +9,96 @@ interface AnalyticsEvent {
   website_id: string;
   session_id: string;
   event_name: string;
-  event_data: Record<string, any> | null;
+  event_data: {
+    path?: string;
+    [key: string]: any;
+  } | null;
   ip_address: string;
   user_agent: string;
   timestamp: string;
 }
 
 function App() {
-  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<AnalyticsEvent[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<AnalyticsEvent[]>([]);
+  const [websiteIds, setWebsiteIds] = useState<string[]>([]);
+  const [selectedWebsiteId, setSelectedWebsiteId] = useState<string>("all");
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const totalEvents = events.length;
-  const pageviews = events.filter(e => e.event_name === 'pageview').length;
-  const uniqueSessions = new Set(events.map(e => e.session_id)).size;
-  const uniqueIPs = new Set(events.map(e => e.ip_address)).size;
-  
-  const pages: Record<string, number> = {};
-  events.forEach(event => {
-    if (event.event_data?.path) {
-      const path = event.event_data.path;
-      pages[path] = (pages[path] || 0) + 1;
-    }
-  });
-  const topPages = Object.entries(pages)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
-  
-  const eventTypes: Record<string, number> = {};
-  events.forEach(event => {
-    eventTypes[event.event_name] = (eventTypes[event.event_name] || 0) + 1;
-  });
-  const sortedEventTypes = Object.entries(eventTypes).sort((a, b) => b[1] - a[1]);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchAllEvents = async () => {
+      setIsLoading(true);
       try {
         const headers = new Headers();
         headers.append("Authorization", `Bearer ${API_KEY}`);
-
         const response = await fetch(API_URL, { headers });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          throw new Error(
+            `Network response was not ok. Status: ${response.status}`,
+          );
         }
 
         const data: AnalyticsEvent[] = await response.json();
-        setEvents(data);
+        setAllEvents(data);
+        setFilteredEvents(data);
+
+        const uniqueIds = [...new Set(data.map((event) => event.website_id))];
+        setWebsiteIds(uniqueIds);
+
         setError(null);
       } catch (e: any) {
         setError(e.message || "An unknown error occurred while fetching data.");
-        setEvents([]);
       } finally {
-        setIsLoading(false);
+    setIsLoading(false);
       }
     };
 
-    fetchEvents();
+    fetchAllEvents();
   }, []);
+
+  useEffect(() => {
+    if (selectedWebsiteId === "all") {
+      setFilteredEvents(allEvents);
+    } else {
+      setFilteredEvents(
+        allEvents.filter((event) => event.website_id === selectedWebsiteId),
+      );
+    }
+  }, [selectedWebsiteId, allEvents]);
+
+  const summaryStats = useMemo(() => {
+    const totalEvents = filteredEvents.length;
+    const pageviews = filteredEvents.filter(
+      (e) => e.event_name === "pageview",
+    ).length;
+    const uniqueSessions = new Set(filteredEvents.map((e) => e.session_id))
+      .size;
+    const uniqueVisitors = new Set(filteredEvents.map((e) => e.ip_address))
+      .size;
+
+    return { totalEvents, pageviews, uniqueSessions, uniqueVisitors };
+  }, [filteredEvents]);
+
+  const topPages = useMemo(() => {
+    const pageCounts: Record<string, number> = {};
+    filteredEvents.forEach((event) => {
+      if (event.event_name === "pageview" && event.event_data?.path) {
+        const path = event.event_data.path;
+        pageCounts[path] = (pageCounts[path] || 0) + 1;
+      }
+    });
+
+    return Object.entries(pageCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5); // Get top 5 pages
+  }, [filteredEvents]);
+
+  const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedWebsiteId(e.target.value);
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -75,47 +107,51 @@ function App() {
 
     if (error) {
       return (
-        <>
-          <p className="status-message error">Error: {error}</p>
-          <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666' }}>
-            Make sure the API is accessible and CORS headers are configured.
-          </p>
-        </>
+        <p className="status-message error">
+          Error: {error}. Make sure the API is accessible and CORS headers are
+          configured.
+        </p>
       );
     }
 
-    if (events.length === 0) {
+    if (allEvents.length === 0) {
       return (
-        <div style={{ textAlign: 'center', padding: '3rem' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📭</div>
-          <h2>No events tracked yet</h2>
-          <p style={{ color: '#666', marginTop: '1rem' }}>
-            Start tracking events using the JavaScript tracker or test page.
-          </p>
-        </div>
+        <p className="status-message">
+          No events have been tracked yet. Use the tracking snippet or curl to
+          send an event.
+        </p>
       );
     }
 
-    const maxPageViews = topPages.length > 0 ? Math.max(...topPages.map(([, count]) => count)) : 1;
+    const maxPageViews =
+      topPages.length > 0 ? Math.max(...topPages.map(([, count]) => count)) : 1;
 
     return (
       <>
         {/* Stats Grid */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-value">{totalEvents.toLocaleString()}</div>
+            <div className="stat-value">
+              {summaryStats.totalEvents.toLocaleString()}
+            </div>
             <div className="stat-label">Total Events</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{pageviews.toLocaleString()}</div>
+            <div className="stat-value">
+              {summaryStats.pageviews.toLocaleString()}
+            </div>
             <div className="stat-label">Page Views</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{uniqueSessions.toLocaleString()}</div>
+            <div className="stat-value">
+              {summaryStats.uniqueSessions.toLocaleString()}
+            </div>
             <div className="stat-label">Unique Sessions</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{uniqueIPs.toLocaleString()}</div>
+            <div className="stat-value">
+              {summaryStats.uniqueVisitors.toLocaleString()}
+            </div>
             <div className="stat-label">Unique Visitors</div>
           </div>
         </div>
@@ -123,12 +159,17 @@ function App() {
         {/* Top Pages Chart */}
         {topPages.length > 0 && (
           <div className="chart-container">
-            <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>📄 Top Pages</h3>
+            <h3>Top Pages</h3>
             <div className="bar-chart">
               {topPages.map(([page, count]) => (
                 <div key={page} className="bar-item">
-                  <div className="bar-label">{page || '/'}</div>
-                  <div className="bar-fill" style={{ width: `${(count / maxPageViews) * 100}%` }}></div>
+                  <div className="bar-label" title={page}>
+                    {page || "/"}
+                  </div>
+                  <div
+                    className="bar-fill"
+                    style={{ width: `${(count / maxPageViews) * 100}%` }}
+                  ></div>
                   <div className="bar-value">{count}</div>
                 </div>
               ))}
@@ -136,43 +177,44 @@ function App() {
           </div>
         )}
 
-        {/* Event Types */}
-        {sortedEventTypes.length > 0 && (
-          <div className="chart-container" style={{ marginTop: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>🎯 Event Types</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {sortedEventTypes.map(([type, count]) => (
-                <span key={type} className="tag">
-                  {type} ({count})
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Latest Events Table */}
-        <h3 style={{ marginTop: '2rem' }}>📋 Latest Events</h3>
+        <h3>Latest Events</h3>
         <div className="table-container">
           <table>
             <thead>
               <tr>
                 <th>Timestamp</th>
-                <th>Website</th>
-                <th>Event</th>
+                <th>Event Name</th>
                 <th>IP Address</th>
+                <th>Event Data</th>
               </tr>
             </thead>
             <tbody>
-              {events.slice(0, 50).map((event) => (
-                <tr key={event.id}>
-                  <td>{new Date(event.timestamp).toLocaleString()}</td>
-                  <td><span className="tag">{event.website_id}</span></td>
-                  <td>{event.event_name}</td>
-                  <td>{event.ip_address}</td>
-                </tr>
-              ))}
+              {filteredEvents.slice(0, 50).map(
+                (
+                  event, // Show latest 50
+                ) => (
+                  <tr key={event.id}>
+                    <td>{new Date(event.timestamp).toLocaleString()}</td>
+                    <td>{event.event_name}</td>
+                    <td>{event.ip_address}</td>
+                    <td>
+                      <pre>
+                        {event.event_data
+                          ? JSON.stringify(event.event_data, null, 2)
+                          : "N/A"}
+                      </pre>
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
+          {filteredEvents.length === 0 && (
+            <p className="status-message">
+              No events found for the selected website.
+            </p>
+          )}
         </div>
       </>
     );
@@ -181,9 +223,27 @@ function App() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>📊 Analytics Dashboard</h1>
+        <h1>Analytics Dashboard</h1>
         <p>A modern frontend powered by React and TypeScript.</p>
       </header>
+
+      <div className="toolbar">
+        <label htmlFor="website-filter">Filter by Website:</label>
+        <select
+          id="website-filter"
+          value={selectedWebsiteId}
+          onChange={handleFilterChange}
+          disabled={websiteIds.length === 0}
+        >
+          <option value="all">All Websites</option>
+          {websiteIds.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <main className="dashboard-main">{renderContent()}</main>
     </div>
   );
