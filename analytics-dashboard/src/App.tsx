@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
-// --- Configuration ---
-const API_URL = "https://nsisonglabs.com/analytics_platform/public/api.php";
-const API_KEY = "SUPER_SECRET_API_KEY";
+const API_URL = import.meta.env.VITE_API_URL || 'https://nsisonglabs.com/analytics_platform/public/api.php';
+const API_KEY = import.meta.env.VITE_API_KEY || 'CHANGE_THIS_TO_A_SECURE_RANDOM_KEY';
 
-// Define a type for our event data for type safety.
 interface AnalyticsEvent {
   id: number;
   website_id: string;
@@ -87,8 +85,9 @@ function App() {
 
   const summaryStats = useMemo(() => {
     const totalEvents = filteredEvents.length;
+    // Count both "pageview" and "pageview-success" events
     const pageviews = filteredEvents.filter(
-      (e) => e.event_name === "pageview",
+      (e) => e.event_name === "pageview" || e.event_name === "pageview-success",
     ).length;
     const uniqueSessions = new Set(filteredEvents.map((e) => e.session_id))
       .size;
@@ -101,7 +100,8 @@ function App() {
   const topPages = useMemo(() => {
     const pageCounts: Record<string, number> = {};
     filteredEvents.forEach((event) => {
-      if (event.event_name === "pageview" && event.event_data?.path) {
+      // Count both "pageview" and "pageview-success" events
+      if ((event.event_name === "pageview" || event.event_name === "pageview-success") && event.event_data?.path) {
         const path = event.event_data.path;
         pageCounts[path] = (pageCounts[path] || 0) + 1;
       }
