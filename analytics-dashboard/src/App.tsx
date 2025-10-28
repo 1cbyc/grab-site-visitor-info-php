@@ -328,7 +328,7 @@ function App() {
         color: '#666',
         borderTop: '1px solid #e2e8f0'
       }}>
-        <p>© 2024 Analytics Platform. All rights reserved.</p>
+        <p>© 2023 Isaac Emmanuel. All rights reserved.</p>
       </footer>
     </div>
   );
