@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, ChangeEvent } from "react";
+import { useState, useEffect, useMemo, type ChangeEvent } from "react";
 import "./App.css";
 
 const API_URL = "https://nsisonglabs.com/analytics_platform/public/api.php";
@@ -72,7 +72,7 @@ function App() {
   const summaryStats = useMemo(() => {
     const totalEvents = filteredEvents.length;
     const pageviews = filteredEvents.filter(
-      (e) => e.event_name === "pageview",
+      (e) => e.event_name === "pageview" || e.event_name === "pageview-success",
     ).length;
     const uniqueSessions = new Set(filteredEvents.map((e) => e.session_id))
       .size;
@@ -85,7 +85,7 @@ function App() {
   const topPages = useMemo(() => {
     const pageCounts: Record<string, number> = {};
     filteredEvents.forEach((event) => {
-      if (event.event_name === "pageview" && event.event_data?.path) {
+      if ((event.event_name === "pageview" || event.event_name === "pageview-success") && event.event_data?.path) {
         const path = event.event_data.path;
         pageCounts[path] = (pageCounts[path] || 0) + 1;
       }
