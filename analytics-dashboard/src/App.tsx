@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, type ChangeEvent } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
+// --- Configuration ---
 const API_URL = "https://nsisonglabs.com/analytics_platform/public/api.php";
 const API_KEY = "SUPER_SECRET_API_KEY";
 
+// Define a type for our event data for type safety.
 interface AnalyticsEvent {
   id: number;
   website_id: string;
@@ -11,6 +13,7 @@ interface AnalyticsEvent {
   event_name: string;
   event_data: {
     path?: string;
+    path_not_found?: string;
     [key: string]: any;
   } | null;
   ip_address: string;
@@ -22,7 +25,10 @@ function App() {
   const [allEvents, setAllEvents] = useState<AnalyticsEvent[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<AnalyticsEvent[]>([]);
   const [websiteIds, setWebsiteIds] = useState<string[]>([]);
+
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +49,6 @@ function App() {
 
         const data: AnalyticsEvent[] = await response.json();
         setAllEvents(data);
-        setFilteredEvents(data);
 
         const uniqueIds = [...new Set(data.map((event) => event.website_id))];
         setWebsiteIds(uniqueIds);
@@ -60,19 +65,30 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (selectedWebsiteId === "all") {
-      setFilteredEvents(allEvents);
-    } else {
-      setFilteredEvents(
-        allEvents.filter((event) => event.website_id === selectedWebsiteId),
-      );
+    let events = allEvents;
+
+    if (selectedWebsiteId !== "all") {
+      events = events.filter((event) => event.website_id === selectedWebsiteId);
     }
-  }, [selectedWebsiteId, allEvents]);
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      events = events.filter((event) => new Date(event.timestamp) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      events = events.filter((event) => new Date(event.timestamp) <= end);
+    }
+
+    setFilteredEvents(events);
+  }, [selectedWebsiteId, startDate, endDate, allEvents]);
 
   const summaryStats = useMemo(() => {
     const totalEvents = filteredEvents.length;
     const pageviews = filteredEvents.filter(
-      (e) => e.event_name === "pageview" || e.event_name === "pageview-success",
+      (e) => e.event_name === "pageview",
     ).length;
     const uniqueSessions = new Set(filteredEvents.map((e) => e.session_id))
       .size;
@@ -85,7 +101,7 @@ function App() {
   const topPages = useMemo(() => {
     const pageCounts: Record<string, number> = {};
     filteredEvents.forEach((event) => {
-      if ((event.event_name === "pageview" || event.event_name === "pageview-success") && event.event_data?.path) {
+      if (event.event_name === "pageview" && event.event_data?.path) {
         const path = event.event_data.path;
         pageCounts[path] = (pageCounts[path] || 0) + 1;
       }
@@ -93,12 +109,25 @@ function App() {
 
     return Object.entries(pageCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5); // Get top 5 pages
+      .slice(0, 5);
   }, [filteredEvents]);
 
-  const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setSelectedWebsiteId(e.target.value);
-  };
+  const top404Paths = useMemo(() => {
+    const pathCounts: Record<string, number> = {};
+    filteredEvents.forEach((event) => {
+      if (
+        event.event_name === "404_not_found" &&
+        event.event_data?.path_not_found
+      ) {
+        const path = event.event_data.path_not_found;
+        pathCounts[path] = (pathCounts[path] || 0) + 1;
+      }
+    });
+
+    return Object.entries(pathCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5); // Get top 5 404 paths
+  }, [filteredEvents]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -177,6 +206,31 @@ function App() {
           </div>
         )}
 
+        {/* Top 404 Not Found Paths Table */}
+        {top404Paths.length > 0 && (
+          <div className="chart-container">
+            <h3>Top 404 Not Found Paths</h3>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Path</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {top404Paths.map(([path, count]) => (
+                    <tr key={path}>
+                      <td>{path}</td>
+                      <td>{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Latest Events Table */}
         <h3>Latest Events</h3>
         <div className="table-container">
@@ -190,29 +244,25 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {filteredEvents.slice(0, 50).map(
-                (
-                  event, // Show latest 50
-                ) => (
-                  <tr key={event.id}>
-                    <td>{new Date(event.timestamp).toLocaleString()}</td>
-                    <td>{event.event_name}</td>
-                    <td>{event.ip_address}</td>
-                    <td>
-                      <pre>
-                        {event.event_data
-                          ? JSON.stringify(event.event_data, null, 2)
-                          : "N/A"}
-                      </pre>
-                    </td>
-                  </tr>
-                ),
-              )}
+              {filteredEvents.slice(0, 50).map((event) => (
+                <tr key={event.id}>
+                  <td>{new Date(event.timestamp).toLocaleString()}</td>
+                  <td>{event.event_name}</td>
+                  <td>{event.ip_address}</td>
+                  <td>
+                    <pre>
+                      {event.event_data
+                        ? JSON.stringify(event.event_data, null, 2)
+                        : "N/A"}
+                    </pre>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
           {filteredEvents.length === 0 && (
             <p className="status-message">
-              No events found for the selected website.
+              No events found for the selected filters.
             </p>
           )}
         </div>
@@ -228,11 +278,11 @@ function App() {
       </header>
 
       <div className="toolbar">
-        <label htmlFor="website-filter">Filter by Website:</label>
+        <label htmlFor="website-filter">Website:</label>
         <select
           id="website-filter"
           value={selectedWebsiteId}
-          onChange={handleFilterChange}
+          onChange={(e) => setSelectedWebsiteId(e.target.value)}
           disabled={websiteIds.length === 0}
         >
           <option value="all">All Websites</option>
@@ -242,6 +292,22 @@ function App() {
             </option>
           ))}
         </select>
+
+        <label htmlFor="start-date">Start Date:</label>
+        <input
+          type="date"
+          id="start-date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+
+        <label htmlFor="end-date">End Date:</label>
+        <input
+          type="date"
+          id="end-date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
       </div>
 
       <main className="dashboard-main">{renderContent()}</main>
