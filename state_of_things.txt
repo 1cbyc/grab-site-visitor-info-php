@@ -1,0 +1,18 @@
+how this is built:
+
+analytics_platform/
+  ├── src/
+  │   ├── Config.php  (renamed from config.php)
+  │   ├── Database.php 
+  │   └── init_db.php 
+  ├── public/
+  │   ├── api.php  (uses Config)
+  │   ├── track.php 
+  │   ├── index.php  (uses Config)
+  │   └── tracker.js 
+  └── config.example.php 
+
+analytics-dashboard/
+  ├── src/
+  │   └── App.tsx  (pageview-success fix + env vars)
+  └── .env.example 
