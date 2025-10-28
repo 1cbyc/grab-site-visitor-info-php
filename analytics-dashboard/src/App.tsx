@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
-const API_KEY = import.meta.env.VITE_API_KEY;
+const API_URL = import.meta.env.VITE_API_URL || 'https://nsisonglabs.com/analytics_platform/public/api.php';
+const API_KEY = import.meta.env.VITE_ANALYTICS_API_KEY;
 
 interface AnalyticsEvent {
   id: number;
@@ -32,9 +32,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!API_URL || !API_KEY) {
+    if (!API_KEY) {
       setError(
-        "Configuration error: API URL or Key is not defined. Please check your .env file.",
+        "Configuration error: API Key is not defined. Please set VITE_ANALYTICS_API_KEY in your environment variables.",
       );
       setIsLoading(false);
       return;
@@ -45,15 +45,23 @@ function App() {
       try {
         const headers = new Headers();
         headers.append("Authorization", `Bearer ${API_KEY}`);
+        
+        console.log('Fetching from:', API_URL);
+        console.log('Using API Key:', API_KEY ? '***' + API_KEY.slice(-4) : 'NOT SET');
+        
         const response = await fetch(API_URL, { headers });
 
+        console.log('Response status:', response.status);
+
         if (!response.ok) {
+          const errorText = await response.text();
           throw new Error(
-            `Network response was not ok. Status: ${response.status}`,
+            `Network response was not ok. Status: ${response.status}. ${errorText}`,
           );
         }
 
         const data: AnalyticsEvent[] = await response.json();
+        console.log('Fetched events:', data.length);
         setAllEvents(data);
 
         const uniqueIds = [...new Set(data.map((event) => event.website_id))];
