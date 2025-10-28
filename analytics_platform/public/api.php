@@ -1,14 +1,18 @@
 <?php
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Authorization, Content-Type");
-header("Access-Control-Max-Age: 3600");
+require_once __DIR__ . "/../src/Config.php";
+require_once __DIR__ . "/../src/Database.php";
+
+$config = Config::load();
+$corsConfig = $config['cors'] ?? [];
+
+header("Access-Control-Allow-Origin: " . ($corsConfig['allowed_origins'] ?? '*'));
+header("Access-Control-Allow-Methods: " . implode(', ', $corsConfig['allowed_methods'] ?? ['GET', 'OPTIONS']));
+header("Access-Control-Allow-Headers: " . implode(', ', $corsConfig['allowed_headers'] ?? ['Authorization', 'Content-Type']));
+header("Access-Control-Max-Age: " . ($corsConfig['max_age'] ?? 3600));
 header("Content-Type: application/json; charset=UTF-8");
 
-define("API_KEY", "SUPER_SECRET_API_KEY");
-
-require_once __DIR__ . "/../src/Database.php";
+$apiKey = $config['api_key'] ?? 'CHANGE_THIS_TO_A_SECURE_RANDOM_KEY';
 
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     http_response_code(204);
@@ -27,7 +31,7 @@ if (preg_match("/Bearer\s(\S+)/", $auth_header, $matches)) {
     $token = $matches[1];
 }
 
-if ($token !== API_KEY) {
+if ($token !== $apiKey) {
     http_response_code(401);
     echo json_encode(["message" => "Invalid API key."]);
     exit();
