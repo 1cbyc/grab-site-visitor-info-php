@@ -1,25 +1,27 @@
 <?php
 
-require_once __DIR__ . "/../src/Config.php";
-require_once __DIR__ . "/../src/Database.php";
-
-$config = Config::load();
-$corsConfig = $config['cors'] ?? [];
-
-header("Access-Control-Allow-Origin: " . ($corsConfig['allowed_origins'] ?? '*'));
-header("Access-Control-Allow-Methods: " . implode(', ', $corsConfig['allowed_methods'] ?? ['GET', 'OPTIONS']));
-header("Access-Control-Allow-Headers: " . implode(', ', $corsConfig['allowed_headers'] ?? ['Authorization', 'Content-Type']));
-header("Access-Control-Max-Age: " . ($corsConfig['max_age'] ?? 3600));
 header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
 
-$apiKey = $config['api_key'] ?? 'CHANGE_THIS_TO_A_SECURE_RANDOM_KEY';
+require_once __DIR__ . "/../src/Database.php";
+$config = require __DIR__ . "/../src/Config.php";
 
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    header("Access-Control-Allow-Methods: GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Authorization, Content-Type");
     http_response_code(204);
     exit();
 }
 
+if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+    http_response_code(405);
+    echo json_encode(["message" => "This endpoint only accepts GET requests."]);
+    exit();
+}
+
+$apiKey = $config["dashboard_api_key"];
 $auth_header = $_SERVER["HTTP_AUTHORIZATION"] ?? null;
+
 if (!$auth_header) {
     http_response_code(401);
     echo json_encode(["message" => "Authorization header is missing."]);
@@ -32,7 +34,7 @@ if (preg_match("/Bearer\s(\S+)/", $auth_header, $matches)) {
 }
 
 if ($token !== $apiKey) {
-    http_response_code(401);
+    http_response_code(403);
     echo json_encode(["message" => "Invalid API key."]);
     exit();
 }
@@ -44,7 +46,7 @@ try {
     $params = [];
     $where_clauses = [];
 
-    if (isset($_GET["website_id"])) {
+    if (!empty($_GET["website_id"])) {
         $where_clauses[] = "website_id = :website_id";
         $params[":website_id"] = $_GET["website_id"];
     }
@@ -58,7 +60,7 @@ try {
     $limit =
         isset($_GET["limit"]) && is_numeric($_GET["limit"])
             ? (int) $_GET["limit"]
-            : 100;
+            : 500;
     $sql .= " LIMIT :limit";
     $params[":limit"] = $limit;
 
@@ -73,7 +75,7 @@ try {
     $results = $stmt->fetchAll();
 
     foreach ($results as &$row) {
-        if ($row["event_data"]) {
+        if (!empty($row["event_data"])) {
             $row["event_data"] = json_decode($row["event_data"]);
         }
     }
